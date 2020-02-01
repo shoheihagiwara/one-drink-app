@@ -4,9 +4,12 @@ const bodyParser = require('body-parser');
 const cors = require('cors');
 const knex = require('knex')
 
+const DB_URL = process.env.DATABASE_URL || 'localhost' // TODO for local run.
+const PORT = process.env.PORT || 3000
+
 const db = knex({
   client: 'pg',
-  connection: process.env.DATABASE_URL
+  connection: DB_URL
 });
 
 const app = express();
@@ -93,6 +96,6 @@ app.put('/image', (req, res) => {
 })
 */
 
-app.listen(3000, ()=> {
+app.listen(PORT, ()=> {
   console.log('app is running on port 3000');
 })
