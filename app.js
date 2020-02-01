@@ -1,25 +1,68 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 //const bcrypt = require('bcrypt-nodejs');
-const cors = require('cors');
-const knex = require('knex')
+//const cors = require('cors');
+const knex = require('knex');
+const { execSync } = require('child_process');
 
-const DB_URL = process.env.DATABASE_URL || 'localhost' // TODO for local run.
+// set config vars. if production, use environmet vars. if not, it's dev env.
 const PORT = process.env.PORT || 3000
+const DB_URL = process.env.DATABASE_URL || 'postgres://shohei:shohei@localhost:5432/one_drink_app'
+
+/*
+console.log("before: ", DB_URL)
+if (!DB_URL) {
+    execSync('heroku config:get DATABASE_URL -a one-drink-app', (err, stdout, stderr) => {
+        console.log("here")
+        console.log(err, stdout, stderr);
+        DB_URL = 'abc'
+    });
+}
+console.log("after: ", DB_URL)
+*/
 
 const db = knex({
-  client: 'pg',
-  connection: DB_URL
+    client: 'pg',
+    connection: DB_URL
 });
 
 const app = express();
 
-app.use(cors())
+//app.use(cors())
 app.use(bodyParser.json());
 
 app.get('/', (req, res) => {
     res.send("It worked!");
 });
+
+app.get('/location', (req, res) => {
+    db.select('*').from('session')
+        .then(rows => {
+            console.log(rows);
+            
+            res.send(rows)
+        })
+})
+
+app.post('/location', (req, res) => {
+    const {id, name, latitude, altitude } = req.body
+    db.insert({
+        id: id,
+        name: name,
+        altitude: altitude,
+        latitude: latitude,
+        timestamp: knex.raw('current_timestamp')
+    })
+    .into('session')
+    .returning('*')
+    .then(rows => {
+        res.send(rows);
+    })
+    .catch(err => {
+        console.log(err);
+        res.status(500).json('unable to register...')
+    })
+})
 
 /*
 app.post('/signin', (req, res) => {
@@ -96,6 +139,6 @@ app.put('/image', (req, res) => {
 })
 */
 
-app.listen(PORT, ()=> {
-  console.log('app is running on port 3000');
+app.listen(PORT, () => {
+    console.log('app is running on port 3000');
 })
